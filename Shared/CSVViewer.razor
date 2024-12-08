@@ -1,0 +1,90 @@
+@if (Data != null && Data.Headers.Any())
+{
+    <div class="table-container">
+        <!-- Table Headers -->
+        <div class="table-headers">
+            @foreach (var header in Data.Headers)
+            {
+                <div class="header-cell">@header</div>
+            }
+        </div>
+
+        <!-- Table Content -->
+        <div class="table-content">
+            @foreach (var row in Data.Rows)
+            {
+                <div class="table-row">
+                    @foreach (var cell in row)
+                    {
+                        <div class="row-cell">@cell</div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <p>No data available.</p>
+}
+
+<style>
+    .table-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+    }
+
+    .table-headers {
+        display: flex;
+        background-color: #f4f4f4;
+        border-bottom: 1px solid #ccc;
+        font-weight: bold;
+    }
+
+    .header-cell {
+        flex: 1;
+        padding: 8px;
+        text-align: left;
+        border-right: 1px solid #ccc;
+    }
+
+    .header-cell:last-child {
+        border-right: none;
+    }
+
+    .table-content {
+        max-height: 400px; /* Adjust height as needed */
+        overflow-y: auto;
+    }
+
+    .table-row {
+        display: flex;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .row-cell {
+        flex: 1;
+        padding: 8px;
+        text-align: left;
+        border-right: 1px solid #ccc;
+    }
+
+    .row-cell:last-child {
+        border-right: none;
+    }
+
+    .table-row:last-child {
+        border-bottom: none;
+    }
+</style>
+
+@code
+{
+    [Parameter]
+    public CSV Data { get; set; } = null!;
+}

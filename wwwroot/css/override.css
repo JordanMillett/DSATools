@@ -1,0 +1,27 @@
+.navbar
+{
+    --bs-navbar-toggler-focus-width: 0;
+    
+    background-color: #F6F6F6; /* From DSA National website */
+    --bs-navbar-brand-color: var(--dsa-black);
+    --bs-navbar-brand-hover-color: var(--dsa-black);
+    --bs-navbar-active-color: var(--dsa-red);
+    --bs-navbar-color: var(--dsa-black);
+    --bs-navbar-hover-color: var(--dsa-red);
+    
+    --bs-navbar-disabled-color: #00FF00;
+}
+
+.navbar-brand
+{
+    font-weight: 600;
+    font-size: 1.5rem;
+}
+
+.nav-link
+{
+    font-weight: 600;
+    font-size: 1rem;
+    padding-bottom: 0;
+    --bs-nav-link-padding-y: 0.25rem;
+}

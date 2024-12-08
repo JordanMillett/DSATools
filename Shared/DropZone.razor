@@ -1,0 +1,93 @@
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div @ref="Element" class="drop-zone">
+    <p>Drop a file or paste an image from the clipboard or select a file using the input</p>
+    <InputFile OnChange="@OnChange" @ref="Input" />
+</div>
+
+<style>
+    .drop-zone
+    {
+    width: 100%;
+    height: 100%;
+
+    padding: 25px;
+
+    text-align: center;
+
+    border-color: var(--dsa-red);
+    border-style: dashed;
+    border-width: 3px;
+    border-radius: 10px;
+    }
+</style>
+
+@code 
+{
+    ElementReference Element;
+    InputFile Input = null!;
+
+    IJSObjectReference Module = null!;
+    IJSObjectReference Instance = null!;
+
+    [Parameter]
+    public EventCallback<CSV> OnCSVChanged { get; set; }
+
+    CSV? Data = null;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/js/dropZone.js");
+
+            Instance = await Module.InvokeAsync<IJSObjectReference>("initializeFileDropZone", Element, Input.Element);
+        }
+    }
+
+    async Task OnChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file.ContentType == "text/csv")
+        {
+            using var stream = file.OpenReadStream();
+            using var reader = new StreamReader(stream);
+
+            // Use asynchronous reading
+            var headersLine = await reader.ReadLineAsync();
+            var headers = headersLine?.Split(',') ?? Array.Empty<string>();
+            var rows = new List<string[]>();
+
+            string? line;
+            while ((line = await reader.ReadLineAsync()) != null)
+            {
+                rows.Add(line.Split(','));
+            }
+
+            CSV Data = new CSV
+            {
+                Headers = headers,
+                Rows = rows
+            };
+
+            await OnCSVChanged.InvokeAsync(Data);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Instance != null)
+        {
+            await Instance.InvokeVoidAsync("dispose");
+            await Instance.DisposeAsync();
+        }
+
+        if (Module != null)
+        {
+            await Module.DisposeAsync();
+        }
+    }
+
+}

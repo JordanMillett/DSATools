@@ -1,0 +1,63 @@
+@page "/csv-editor"
+@using DSATools.Shared
+
+<PageTitle>CSV Editor</PageTitle>
+
+<h1>CSV Editor</h1>
+<br>
+
+<div class="row">
+    <div class="col-9">
+        <h4>Membership List</h4><br>
+        @if(Membership != null)
+        {
+            <CSVViewer Data=@Membership />
+        }else
+        {
+            <DropZone OnCSVChanged="Membership_CSVChanged"/>
+        }
+    </div>
+
+    <div class="col-3">
+        <h4>Exclude List</h4><br>
+        @if(Exclude != null)
+        {
+            <CSVViewer Data=@Exclude />
+        }else
+        {
+            <DropZone OnCSVChanged="Exclude_CSVChanged"/>
+        }
+    </div>
+</div>
+
+@code
+{
+    CSV Membership = null!;
+    CSV Exclude = null!;
+
+    void Membership_CSVChanged(CSV Data)
+    {
+        List<string> HeaderWhitelist = new List<string>
+        {
+            "first_name",
+            "last_name",
+            "email",
+            "membership_status"
+        };
+        
+        Membership = Data.Filtered(HeaderWhitelist);
+    }
+
+    void Exclude_CSVChanged(CSV Data)
+    {
+        List<string> HeaderWhitelist = new List<string>
+        {
+            "first_name",
+            "last_name",
+            "email"
+        };
+        
+        Exclude = Data.Filtered(HeaderWhitelist);
+    }
+}
+
