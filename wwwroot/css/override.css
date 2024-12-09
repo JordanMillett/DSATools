@@ -2,7 +2,8 @@
 {
     --bs-navbar-toggler-focus-width: 0;
     
-    background-color: #F6F6F6; /* From DSA National website */
+    background-color: var(--dsa-web-gray);
+    
     --bs-navbar-brand-color: var(--dsa-black);
     --bs-navbar-brand-hover-color: var(--dsa-black);
     --bs-navbar-active-color: var(--dsa-red);

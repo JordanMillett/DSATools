@@ -1,5 +1,8 @@
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
+@using CsvHelper
+@using CsvHelper.Configuration
+@using System.Globalization
 
 <div @ref="Element" class="drop-zone">
     <p>Drop a file or paste an image from the clipboard or select a file using the input</p>
@@ -10,7 +13,7 @@
     .drop-zone
     {
     width: 100%;
-    height: 100%;
+    height: 200px;
 
     padding: 25px;
 
@@ -32,9 +35,7 @@
     IJSObjectReference Instance = null!;
 
     [Parameter]
-    public EventCallback<CSV> OnCSVChanged { get; set; }
-
-    CSV? Data = null;
+    public EventCallback<List<IDictionary<string, object>>> OnCSVChanged { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -48,31 +49,31 @@
 
     async Task OnChange(InputFileChangeEventArgs e)
     {
-        var file = e.File;
+        IBrowserFile file = e.File;
 
         if (file.ContentType == "text/csv")
         {
-            using var stream = file.OpenReadStream();
-            using var reader = new StreamReader(stream);
+            using Stream stream = file.OpenReadStream();
+            using StreamReader reader = new StreamReader(stream);
 
-            // Use asynchronous reading
-            var headersLine = await reader.ReadLineAsync();
-            var headers = headersLine?.Split(',') ?? Array.Empty<string>();
-            var rows = new List<string[]>();
-
-            string? line;
-            while ((line = await reader.ReadLineAsync()) != null)
+            // Configure CsvReader
+            CsvConfiguration config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                rows.Add(line.Split(','));
-            }
-
-            CSV Data = new CSV
-            {
-                Headers = headers,
-                Rows = rows
+                HasHeaderRecord = true // Indicates the CSV file has headers
             };
 
-            await OnCSVChanged.InvokeAsync(Data);
+            using CsvReader csv = new CsvReader(reader, config);
+
+            // Read records dynamically
+            List<IDictionary<string, object>> records = new List<IDictionary<string, object>>();
+            await foreach (IDictionary<string, object> record in csv.GetRecordsAsync<dynamic>())
+            {
+                IDictionary<string, object> dictionary = record;
+                records.Add(dictionary);
+            }
+
+            // Pass the dynamic records to the event
+            await OnCSVChanged.InvokeAsync(records);
         }
     }
 

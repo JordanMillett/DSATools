@@ -12,6 +12,8 @@
     --dsa-black-1: #3B3838;
     --dsa-black: #231F20;
     
+    --dsa-web-gray: #F6F6F6; /* From DSA National website */
+    
     --background-color: var(--dsa-white);
     --text-color: var(--dsa-black);
     
@@ -23,4 +25,11 @@ html, body
     font-family: "Roboto Slab", "Comic Sans MS";
     background-color: var(--background-color);
     color: var(--text-color);
+    
+    overflow: hidden;
+}
+
+::-webkit-scrollbar 
+{
+    display: none;
 }

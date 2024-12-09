@@ -7,8 +7,9 @@
 <br>
 
 <div class="row">
-    <div class="col-9">
+    <div class="col-8">
         <h4>Membership List</h4><br>
+
         @if(Membership != null)
         {
             <CSVViewer Data=@Membership />
@@ -16,10 +17,12 @@
         {
             <DropZone OnCSVChanged="Membership_CSVChanged"/>
         }
+
     </div>
 
-    <div class="col-3">
+    <div class="col-4">
         <h4>Exclude List</h4><br>
+
         @if(Exclude != null)
         {
             <CSVViewer Data=@Exclude />
@@ -27,37 +30,123 @@
         {
             <DropZone OnCSVChanged="Exclude_CSVChanged"/>
         }
+
+    </div>
+</div>
+<br>
+<div class="row">
+    <div class="col-12">
+        <h4>Filtered List</h4><br>
+
+        @if(Filtered != null)
+        {
+            <CSVViewer Data=@Filtered />
+        }
+
     </div>
 </div>
 
 @code
 {
-    CSV Membership = null!;
-    CSV Exclude = null!;
+    List<IDictionary<string, object>> Membership = null!;
+    List<IDictionary<string, object>> Exclude = null!;
 
-    void Membership_CSVChanged(CSV Data)
+    List<IDictionary<string, object>> Filtered = null!;
+
+    void Membership_CSVChanged(List<IDictionary<string, object>> Data)
     {
-        List<string> HeaderWhitelist = new List<string>
+        List<string> Whitelist = new List<string>()
         {
             "first_name",
             "last_name",
             "email",
             "membership_status"
         };
-        
-        Membership = Data.Filtered(HeaderWhitelist);
+
+        Membership = Filter(Data, Whitelist);
+
+        if(Exclude != null)
+            MakeFilteredList();
     }
 
-    void Exclude_CSVChanged(CSV Data)
+    void Exclude_CSVChanged(List<IDictionary<string, object>> Data)
     {
-        List<string> HeaderWhitelist = new List<string>
+        List<string> Whitelist = new List<string>()
         {
             "first_name",
             "last_name",
-            "email"
+            "email",
+        };
+
+        Exclude = Filter(Data, Whitelist);
+
+        if(Membership != null)
+            MakeFilteredList();
+    }
+
+    void MakeFilteredList()
+    {
+        List<string> fieldsToMatch = new List<string>()
+        {
+            "first_name",
+            "last_name"
         };
         
-        Exclude = Data.Filtered(HeaderWhitelist);
+        Filtered = new List<IDictionary<string, object>>();
+
+        foreach (var member in Membership)
+        {
+            bool isExcluded = false;
+
+            foreach (var exclude in Exclude)
+            {
+                bool match = true;
+
+                foreach (var field in fieldsToMatch)
+                {
+                    if (member.ContainsKey(field) && exclude.ContainsKey(field))
+                    {
+                        var memberValue = member[field]?.ToString();
+                        var excludeValue = exclude[field]?.ToString();
+
+                        // If any field doesn't match, break out of the loop
+                        if (memberValue != excludeValue)
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // If either dictionary is missing the field, treat it as a non-match
+                        match = false;
+                        break;
+                    }
+                }
+
+                // If all specified fields match, mark the member as excluded
+                if (match)
+                {
+                    isExcluded = true;
+                    break;
+                }
+            }
+
+            // If no match is found in the Exclude list, add the member to the Filtered list
+            if (!isExcluded)
+            {
+                Filtered.Add(member);
+            }
+        }
+    }
+    
+    List<IDictionary<string, object>> Filter(List<IDictionary<string, object>> Data, List<string> Whitelist)
+    {
+        return Data.Select(row =>
+            row.Where(kv => Whitelist.Contains(kv.Key))
+            .ToDictionary(kv => kv.Key, kv => kv.Value))
+            .Cast<IDictionary<string, object>>()       
+            .ToList();
     }
 }
 
