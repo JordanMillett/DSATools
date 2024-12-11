@@ -1,0 +1,42 @@
+@if (CSV != null)
+{
+    <CSVViewer CSV=@CSV Title="@Title" OnClose="OnClose"/>
+}else
+{
+    <DropZone OnCSVChanged="CSVChanged"/>
+}
+
+@code
+{
+    [Parameter]
+    public List<IDictionary<string, object>> CSV { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public List<string> Whitelist { get; set; } = new List<string>();
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "File";
+    
+    [Parameter]
+    public EventCallback<List<IDictionary<string, object>>> OnCSVChanged { get; set; }
+
+    void CSVChanged(List<IDictionary<string, object>> Data)
+    {
+        CSV = Filter(Data, Whitelist);
+        OnCSVChanged.InvokeAsync(CSV);
+    }
+
+    void OnClose()
+    {
+        CSV = null!;
+    }
+    
+    List<IDictionary<string, object>> Filter(List<IDictionary<string, object>> Data, List<string> Whitelist)
+    {
+        return Data.Select(row =>
+            row.Where(kv => Whitelist.Contains(kv.Key))
+            .ToDictionary(kv => kv.Key, kv => kv.Value))
+            .Cast<IDictionary<string, object>>()       
+            .ToList();
+    }
+}

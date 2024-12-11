@@ -5,11 +5,19 @@
 @using System.Globalization
 
 <div @ref="Element" class="drop-zone">
-    <p>Drop a file or paste an image from the clipboard or select a file using the input</p>
-    <InputFile OnChange="@OnChange" @ref="Input" />
+    <br>
+    <h4>Drop, paste, or select your CSV file</h4>
+    <div class="selector">
+        <InputFile OnChange="@OnChange" @ref="Input" />
+    </div>
 </div>
 
 <style>
+    .selector
+    {
+        padding-left: 100px;
+    }
+    
     .drop-zone
     {
     width: 100%;

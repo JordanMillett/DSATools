@@ -1,25 +1,31 @@
-<p>@(Data.Count) Members</p>
+@inject IJSRuntime Runtime
+
+@if(CSV.Any())
+{
+<div class="topbar">
+    <Button @onclick="OnClose"><Icon Name="IconName.XSquare" Size="IconSize.x4"/></Button>
+    <Button @onclick="OnSave"><Icon Name="IconName.Floppy" Size="IconSize.x4"/>
+        <h5 style="display: inline; margin-left: 12px;">
+            @(Title)-@(CSV.Count)x.csv
+        </h5>
+        </Button>
+</div>
 
 <div class="preview">
     <table class="table">
         <thead>
             <tr>
-                @if (Data != null && Data.Any())
+                @foreach (var header in CSV.First().Keys)
                 {
-                    foreach (var header in Data.First().Keys)
-                    {
-                        <th>@header</th>
-                    }
+                    <th>@header</th>
                 }
             </tr>
         </thead>
         <tbody class="table-body">
-
-            @if (Data != null && Data.Any())
-            {
+            @{
                 bool Checker = false;
 
-                foreach (var row in Data)
+                foreach (var row in CSV)
                 {
                     <tr class="@(Checker ? "checker" : "")">
                         @foreach (var cell in row.Values)
@@ -27,41 +33,92 @@
                             <td>@cell</td>
                         }
                     </tr>
-                    
+
                     Checker = !Checker;
                 }
             }
         </tbody>
     </table>
 </div>
+}
 
 <style>
+    .topbar
+    {
+    border: solid 1px black;
+    border-bottom: 0;
+    vertical-align: bottom;
+    }
+
+    .topbar .btn
+    {
+    margin-left: 6px;
+    padding: 2px;
+    }
+
     .preview
     {
-        height: 500px;
-        overflow-y:scroll;
-        overflow-x:scroll;
+    border: solid 1px black;
+    height: 400px;
+    overflow-y:scroll;
+    overflow-x:scroll;
     }
-    
+
     th 
     {
-        position: sticky;
-        top: 0;
-        background-color: var(--dsa-web-gray);
-        z-index: 1;
-        text-align: left;
+    position: sticky;
+    top: 0;
+    background-color: var(--dsa-web-gray);
+    z-index: 1;
+    text-align: left;
     }
-    
+
     .table
     {
-        border-color: var(--dsa-web-gray);
-        width: 100%;
-        border-collapse: collapse;
+    border-color: var(--dsa-web-gray);
+    width: 100%;
+    border-collapse: collapse;
     }
 </style>
 
 @code
 {
     [Parameter]
-    public List<IDictionary<string, object>> Data { get; set; } = null!;
+    public List<IDictionary<string, object>> CSV { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "File";
+
+    void OnSave()
+    {
+        if (CSV.Any())
+        {
+            var content = new System.Text.StringBuilder();
+
+            // Add headers
+            var headers = string.Join(",", CSV.First().Keys);
+            content.AppendLine(headers);
+
+            // Add rows
+            foreach (var row in CSV)
+            {
+                var values = string.Join(",", row.Values.Select(v => v?.ToString()?.Replace(",", "\\,") ?? ""));
+                content.AppendLine(values);
+            }
+
+            // Generate the file download in the browser
+            var csvString = content.ToString();
+            var base64Csv = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(csvString));
+            var downloadLink = $"data:text/csv;base64,{base64Csv}";
+            TriggerDownload(downloadLink, Title + "-" + CSV.Count + "x.csv");
+        }
+    }
+    
+    async void TriggerDownload(string fileUrl, string fileName)
+    {
+        await Runtime.InvokeVoidAsync("triggerDownload", fileUrl, fileName);
+    }
 }

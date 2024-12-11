@@ -6,99 +6,161 @@
 <h1>CSV Editor</h1>
 <br>
 
+@if(FilteredCSV != null)
+{
+    /*
+    <label>
+<input type="checkbox" onclick="ToggleGoodStanding" />
+    Only Show Good Standing Members
+    </label>*/
+
+    <div class="row">
+        <div class="col-12">
+            <h4>Filtered List</h4><br>
+
+            <CSVViewer CSV=@FilteredCSV Title="filtered-members" />
+        </div>
+    </div>
+}else
+{
+    <p>Please upload a membership list below.</p>
+}
+
+<br>
+
 <div class="row">
-    <div class="col-8">
+    <div class="col-7">
         <h4>Membership List</h4><br>
 
-        @if(Membership != null)
-        {
-            <CSVViewer Data=@Membership />
-        }else
-        {
-            <DropZone OnCSVChanged="Membership_CSVChanged"/>
-        }
-
+        <CSVHandler CSV=@MembershipCSV Whitelist=@View1 Title="all-members" OnCSVChanged="MembershipCSVChanged"/>
     </div>
 
-    <div class="col-4">
+    <div class="col-5">
         <h4>Exclude List</h4><br>
 
-        @if(Exclude != null)
-        {
-            <CSVViewer Data=@Exclude />
-        }else
-        {
-            <DropZone OnCSVChanged="Exclude_CSVChanged"/>
-        }
-
-    </div>
-</div>
-<br>
-<div class="row">
-    <div class="col-12">
-        <h4>Filtered List</h4><br>
-
-        @if(Filtered != null)
-        {
-            <CSVViewer Data=@Filtered />
-        }
-
+        <CSVHandler CSV=@ExcludeCSV Whitelist=@View2 Title="excluded-members" OnCSVChanged="ExcludeCSVChanged"/>
     </div>
 </div>
 
 @code
 {
-    List<IDictionary<string, object>> Membership = null!;
-    List<IDictionary<string, object>> Exclude = null!;
+    List<IDictionary<string, object>> MembershipCSV = null!;
+    List<IDictionary<string, object>> ExcludeCSV = null!;
 
-    List<IDictionary<string, object>> Filtered = null!;
-
-    void Membership_CSVChanged(List<IDictionary<string, object>> Data)
+    List<string> View1 = new List<string>()
     {
-        List<string> Whitelist = new List<string>()
-        {
-            "first_name",
-            "last_name",
-            "email",
-            "membership_status"
-        };
+        "first_name",
+        "last_name",
+        "email",
+        "membership_status"
+    };
 
-        Membership = Filter(Data, Whitelist);
+    List<string> View2 = new List<string>()
+    {
+        "first_name",
+        "last_name",
+        "email"
+    };
 
-        if(Exclude != null)
-            MakeFilteredList();
+    List<IDictionary<string, object>> FilteredCSV = null!;
+
+    bool OnlyGoodStanding = true;
+
+    void ToggleGoodStanding()
+    {
+        OnlyGoodStanding = !OnlyGoodStanding;
+        MakeFilteredList();
     }
 
-    void Exclude_CSVChanged(List<IDictionary<string, object>> Data)
+    void MembershipCSVChanged(List<IDictionary<string, object>> Data)
     {
-        List<string> Whitelist = new List<string>()
-        {
-            "first_name",
-            "last_name",
-            "email",
-        };
-
-        Exclude = Filter(Data, Whitelist);
-
-        if(Membership != null)
-            MakeFilteredList();
+        MembershipCSV = Data;
+        MakeFilteredList();
+    }
+    
+    void ExcludeCSVChanged(List<IDictionary<string, object>> Data)
+    {
+        ExcludeCSV = Data;
+        MakeFilteredList();
     }
 
     void MakeFilteredList()
+    {
+        if (MembershipCSV == null)
+            return;
+
+        // Create a deep copy of MembershipCSV
+        FilteredCSV = MembershipCSV.Select(item => DeepCopyDictionary(item)).ToList();
+
+        if (ExcludeCSV != null)
+        {
+            FilteredCSV = FilterExclude();
+        }
+
+        if (OnlyGoodStanding)
+        {
+            FilteredCSV = FilterMembership();
+        }
+    }
+
+    // Helper method to deep copy a single dictionary
+    IDictionary<string, object> DeepCopyDictionary(IDictionary<string, object> original)
+    {
+        var copy = new Dictionary<string, object>();
+
+        foreach (var kvp in original)
+        {
+            // If the value is a reference type (excluding strings and value types), we need to deep copy it.
+            // For simplicity, we'll use a method to clone the value if it is a reference type.
+            if (kvp.Value is ICloneable cloneable)
+            {
+                copy[kvp.Key] = cloneable.Clone();
+            }
+            else
+            {
+                // If it's a value type (string, int, etc.), just copy the value
+                copy[kvp.Key] = kvp.Value;
+            }
+        }
+
+        return copy;
+    }
+
+
+    List<IDictionary<string, object>> FilterMembership()
+    {
+        List<IDictionary<string, object>> filteredByStatus = new List<IDictionary<string, object>>();
+
+        foreach (var member in FilteredCSV)
+        {
+            if (member.ContainsKey("membership_status"))
+            {
+                var status = member["membership_status"]?.ToString();
+                if (status == "Member in Good Standing")
+                {
+                    filteredByStatus.Add(member);
+                }
+            }
+        }
+
+        return filteredByStatus;
+    }
+
+    List<IDictionary<string, object>> FilterExclude()
     {
         List<string> fieldsToMatch = new List<string>()
         {
             "first_name",
             "last_name"
         };
-        
-        Filtered = new List<IDictionary<string, object>>();
 
-        foreach (var member in Membership)
+        List<IDictionary<string, object>> filtering = new List<IDictionary<string, object>>();
+
+        foreach (var member in MembershipCSV)
         {
             bool isExcluded = false;
 
-            foreach (var exclude in Exclude)
+            foreach (var exclude in ExcludeCSV)
             {
                 bool match = true;
 
@@ -135,18 +197,11 @@
             // If no match is found in the Exclude list, add the member to the Filtered list
             if (!isExcluded)
             {
-                Filtered.Add(member);
+                filtering.Add(member);
             }
         }
-    }
-    
-    List<IDictionary<string, object>> Filter(List<IDictionary<string, object>> Data, List<string> Whitelist)
-    {
-        return Data.Select(row =>
-            row.Where(kv => Whitelist.Contains(kv.Key))
-            .ToDictionary(kv => kv.Key, kv => kv.Value))
-            .Cast<IDictionary<string, object>>()       
-            .ToList();
+
+        return filtering;
     }
 }
 
