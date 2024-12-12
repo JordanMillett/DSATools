@@ -7,17 +7,10 @@
 <div @ref="Element" class="drop-zone">
     <br>
     <h4>Drop, paste, or select your CSV file</h4>
-    <div class="selector">
-        <InputFile OnChange="@OnChange" @ref="Input" />
-    </div>
+    <InputFile OnChange="@OnChange" @ref="Input" />
 </div>
 
 <style>
-    .selector
-    {
-        padding-left: 100px;
-    }
-    
     .drop-zone
     {
     width: 100%;

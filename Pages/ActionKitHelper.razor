@@ -53,13 +53,13 @@
 <br>
 
 <div class="row">
-    <div class="col-7">
+    <div class="col-12 col-lg-7">
         <h4>Membership List</h4><br>
 
         <CSVHandler CSV=@MembershipCSV Whitelist=@View1 Title="all-members" OnCSVChanged="MembershipCSVChanged"/>
     </div>
 
-    <div class="col-5">
+    <div class="col-12 col-lg-5">
         <h4>Non-Members List</h4><br>
 
         <CSVHandler CSV=@NonMembersCSV Whitelist=@View2 Title="non-members" OnCSVChanged="NonMembersCSVChanged"/>
