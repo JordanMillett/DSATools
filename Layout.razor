@@ -1,17 +1,22 @@
 @inherits LayoutComponentBase
 @using DSATools.Shared
 
-<Navbar />
-
 <main>
-    <article class="content px-4">
-        <div class="py-2">@Body</div>
+    <Navbar />
+    
+    <article class="content">
+        @Body
     </article>
+    
+    <Footer />
 </main>
 
 <style>
     .content
     {
-        min-height: 1000px;
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+        padding-left: 2.5rem !important;
+        padding-right: 2.5rem !important;
     }
 </style>

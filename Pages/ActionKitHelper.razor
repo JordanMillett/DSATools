@@ -1,18 +1,42 @@
-@page "/csv-editor"
+@page "/actionkit-helper"
 @using DSATools.Shared
 
-<PageTitle>CSV Editor</PageTitle>
+<PageTitle>ActionKit Helper</PageTitle>
 
-<h1>CSV Editor</h1>
+<h1>ActionKit Helper</h1>
 <br>
 
 @if(FilteredCSV != null)
 {
-    /*
+
     <label>
-<input type="checkbox" onclick="ToggleGoodStanding" />
-    Only Show Good Standing Members
-    </label>*/
+        <input type="checkbox" @bind="OnlyGoodStanding" />
+        @(OnlyGoodStanding_Count)x - Remove Lapsed & Non-Paying Members
+    </label>
+
+    @if (NonMembersCSV != null)
+    {
+        <br>
+        <label>
+            <input type="checkbox" @bind="RemoveNonMembers" />
+            @(RemoveNonMembers_Count)x - Remove Non-Members Using CSV
+        </label>
+    }
+
+    <br><br>
+
+    @if (FailedToFilter.Count > 0)
+    {
+        <span style="color:var(--dsa-red);">Can not filter these Non-Members as they are not present in the Membership List:</span><br>
+       
+
+        foreach(string F in FailedToFilter)
+        {
+            <span>@(F), </span>
+        }
+        
+        <br><br>
+    }
 
     <div class="row">
         <div class="col-12">
@@ -36,16 +60,23 @@
     </div>
 
     <div class="col-5">
-        <h4>Exclude List</h4><br>
+        <h4>Non-Members List</h4><br>
 
-        <CSVHandler CSV=@ExcludeCSV Whitelist=@View2 Title="excluded-members" OnCSVChanged="ExcludeCSVChanged"/>
+        <CSVHandler CSV=@NonMembersCSV Whitelist=@View2 Title="non-members" OnCSVChanged="NonMembersCSVChanged"/>
     </div>
 </div>
+
+<style>
+    label
+    {
+    user-select: none;
+    }
+</style>
 
 @code
 {
     List<IDictionary<string, object>> MembershipCSV = null!;
-    List<IDictionary<string, object>> ExcludeCSV = null!;
+    List<IDictionary<string, object>> NonMembersCSV = null!;
 
     List<string> View1 = new List<string>()
     {
@@ -64,23 +95,47 @@
 
     List<IDictionary<string, object>> FilteredCSV = null!;
 
-    bool OnlyGoodStanding = true;
-
-    void ToggleGoodStanding()
+    int OnlyGoodStanding_Count = 0;
+    private bool _OnlyGoodStanding = true;
+    public bool OnlyGoodStanding
     {
-        OnlyGoodStanding = !OnlyGoodStanding;
-        MakeFilteredList();
+        get 
+        {
+            return _OnlyGoodStanding;
+        }
+        set 
+        {
+            _OnlyGoodStanding = value; 
+            MakeFilteredList();
+        }
     }
+
+    int RemoveNonMembers_Count = 0;
+    private bool _RemoveNonMembers = true;
+    public bool RemoveNonMembers
+    {
+        get 
+        {
+            return _RemoveNonMembers;
+        }
+        set 
+        {
+            _RemoveNonMembers = value; 
+            MakeFilteredList();
+        }
+    }
+
+    List<string> FailedToFilter = new List<string>();
 
     void MembershipCSVChanged(List<IDictionary<string, object>> Data)
     {
         MembershipCSV = Data;
         MakeFilteredList();
     }
-    
-    void ExcludeCSVChanged(List<IDictionary<string, object>> Data)
+
+    void NonMembersCSVChanged(List<IDictionary<string, object>> Data)
     {
-        ExcludeCSV = Data;
+        NonMembersCSV = Data;
         MakeFilteredList();
     }
 
@@ -92,9 +147,9 @@
         // Create a deep copy of MembershipCSV
         FilteredCSV = MembershipCSV.Select(item => DeepCopyDictionary(item)).ToList();
 
-        if (ExcludeCSV != null)
+        if (NonMembersCSV != null && RemoveNonMembers)
         {
-            FilteredCSV = FilterExclude();
+            FilteredCSV = FilterNonMembers();
         }
 
         if (OnlyGoodStanding)
@@ -129,6 +184,8 @@
 
     List<IDictionary<string, object>> FilterMembership()
     {
+        OnlyGoodStanding_Count = 0;
+
         List<IDictionary<string, object>> filteredByStatus = new List<IDictionary<string, object>>();
 
         foreach (var member in FilteredCSV)
@@ -139,6 +196,9 @@
                 if (status == "Member in Good Standing")
                 {
                     filteredByStatus.Add(member);
+                }else
+                {
+                    OnlyGoodStanding_Count++;
                 }
             }
         }
@@ -146,8 +206,16 @@
         return filteredByStatus;
     }
 
-    List<IDictionary<string, object>> FilterExclude()
+    List<IDictionary<string, object>> FilterNonMembers()
     {
+        RemoveNonMembers_Count = 0;
+        FailedToFilter.Clear();
+
+        foreach (var exclude in NonMembersCSV)
+        {
+            FailedToFilter.Add(exclude["first_name"].ToString() + " " + exclude["last_name"].ToString());
+        }
+
         List<string> fieldsToMatch = new List<string>()
         {
             "first_name",
@@ -160,7 +228,7 @@
         {
             bool isExcluded = false;
 
-            foreach (var exclude in ExcludeCSV)
+            foreach (var exclude in NonMembersCSV)
             {
                 bool match = true;
 
@@ -190,6 +258,7 @@
                 if (match)
                 {
                     isExcluded = true;
+                    FailedToFilter.Remove(member["first_name"].ToString() + " " + member["last_name"].ToString());
                     break;
                 }
             }
@@ -198,8 +267,13 @@
             if (!isExcluded)
             {
                 filtering.Add(member);
+            }else
+            {
+                RemoveNonMembers_Count++;
             }
         }
+        
+        
 
         return filtering;
     }

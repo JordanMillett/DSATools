@@ -25,11 +25,10 @@ html, body
     font-family: "Roboto Slab", "Comic Sans MS";
     background-color: var(--background-color);
     color: var(--text-color);
-    
-    overflow: hidden;
 }
-
+/*
 ::-webkit-scrollbar 
 {
     display: none;
 }
+*/
