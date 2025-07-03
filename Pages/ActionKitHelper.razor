@@ -88,9 +88,9 @@
 
     List<string> View2 = new List<string>()
     {
-        "first_name",
-        "last_name",
-        "email"
+        "First Name",
+        "Last Name",
+        "Email"
     };
 
     List<IDictionary<string, object>> FilteredCSV = null!;
@@ -213,14 +213,9 @@
 
         foreach (var exclude in NonMembersCSV)
         {
-            FailedToFilter.Add(exclude["first_name"].ToString() + " " + exclude["last_name"].ToString());
+            string name = $"{exclude.Values.ElementAtOrDefault(0)} {exclude.Values.ElementAtOrDefault(1)}";
+            FailedToFilter.Add(name);
         }
-
-        List<string> fieldsToMatch = new List<string>()
-        {
-            "first_name",
-            "last_name"
-        };
 
         List<IDictionary<string, object>> filtering = new List<IDictionary<string, object>>();
 
@@ -230,40 +225,24 @@
 
             foreach (var exclude in NonMembersCSV)
             {
-                bool match = true;
+                var excludeFirst = exclude.Values.ElementAtOrDefault(0)?.ToString()?.Trim();
+                var excludeLast = exclude.Values.ElementAtOrDefault(1)?.ToString()?.Trim();
 
-                foreach (var field in fieldsToMatch)
-                {
-                    if (member.ContainsKey(field) && exclude.ContainsKey(field))
-                    {
-                        var memberValue = member[field]?.ToString();
-                        var excludeValue = exclude[field]?.ToString();
+                var memberFirst = member.ContainsKey("first_name") ? member["first_name"]?.ToString()?.Trim() : null;
+                var memberLast = member.ContainsKey("last_name") ? member["last_name"]?.ToString()?.Trim() : null;
 
-                        // If any field doesn't match, break out of the loop
-                        if (memberValue != excludeValue)
-                        {
-                            match = false;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        // If either dictionary is missing the field, treat it as a non-match
-                        match = false;
-                        break;
-                    }
-                }
-
-                // If all specified fields match, mark the member as excluded
-                if (match)
+                if (excludeFirst != null && excludeLast != null &&
+                memberFirst != null && memberLast != null &&
+                excludeFirst.Equals(memberFirst, StringComparison.OrdinalIgnoreCase) &&
+                excludeLast.Equals(memberLast, StringComparison.OrdinalIgnoreCase))
                 {
                     isExcluded = true;
-                    FailedToFilter.Remove(member["first_name"].ToString() + " " + member["last_name"].ToString());
+                    string matchName = $"{excludeFirst} {excludeLast}";
+                    FailedToFilter.Remove(matchName);
                     break;
                 }
             }
 
-            // If no match is found in the Exclude list, add the member to the Filtered list
             if (!isExcluded)
             {
                 filtering.Add(member);
