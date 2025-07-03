@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "DSATools",
   "resources": {
-    "hash": "sha256-QVDQjY7ZfHYN9wmmf2udhnyIJMrZXn9w5n10dVPoxqs=",
+    "hash": "sha256-oqPg3MdNtcK5XrHPBtIqVpdAfG4WKRcJDxbZKXLTXVc=",
     "jsModuleNative": {
       "dotnet.native.8.0.4.6vlmefabfv.js": "sha256-ju0+XWE0ihz554eKEj0HQ8Opa61xpbUIaX5/MNo8we4="
     },
@@ -19,7 +19,7 @@
     "assembly": {
       "BlazorBootstrap.wasm": "sha256-KvMCw6Z4ECWlPEz4jeQ0QWRGeVqaYlz5Xty6Qz3MwDc=",
       "CsvHelper.wasm": "sha256-BXz5RCSFBrg3KCDZD4lxgyWmw1YH6vUT0N/oIQdCKfA=",
-      "DSATools.wasm": "sha256-047D45lUyg291snwcbghra8oRatWE0KFg6j/m95Cqpg=",
+      "DSATools.wasm": "sha256-za3KJgXKrBjvbKsJF4M9z3FMtm7V8SxjzpeJhquWueM=",
       "Microsoft.AspNetCore.Components.Forms.wasm": "sha256-XmbQeaLsg8oP1uiNSvKA2nIR5R4fXeZSNWT1w2CnWKk=",
       "Microsoft.AspNetCore.Components.wasm": "sha256-p21A53sIzHkYYo/qSC7cf+SsxNF/2oc3tmt+h0U4EGg=",
       "Microsoft.AspNetCore.Components.Web.wasm": "sha256-GhzrHY7iyaNRRwd5Z4mPvSLPH1Ateq8m4LKxjuTTugw=",
