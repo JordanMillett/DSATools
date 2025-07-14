@@ -1,0 +1,156 @@
+@page "/actionkit-reporter"
+@using DSATools.Shared
+
+<PageTitle>ActionKit Reporter</PageTitle>
+
+<h1>ActionKit Reporter</h1>
+<br>
+
+@if(ReportCalculated)
+{
+    @if(LostCSV.Count > 0)
+    {
+        <div class="row">
+            <div class="col-12">
+                <h4>Lost Members</h4>
+                <p>Email Changes, Chapter Transfers, Resignations, Other.</p>
+                <br>
+
+                <CSVViewer CSV=@LostCSV Title="lost-members" />
+            </div>
+        </div>
+        <br>
+    }
+
+    @if(NewCSV.Count > 0)
+    {
+        <div class="row">
+            <div class="col-12">
+                <h4>New Members</h4>
+                <p>Email Changes, Zip Code Incorperation, New Sign-Ups.</p>
+                <br>
+
+                <CSVViewer CSV=@NewCSV Title="new-members" />
+            </div>
+        </div>
+        <br>
+    }
+
+    @if(ExpiredCSV.Count > 0)
+    {
+        <div class="row">
+            <div class="col-12">
+                <h4>Expired Members</h4>
+                <p>From Member In Good Standing to Member (non-voting, not current on dues).</p>
+                <br>
+
+                <CSVViewer CSV=@ExpiredCSV Title="expired-members" />
+            </div>
+        </div>
+        <br>
+    }
+}
+
+<div class="row">
+    <div class="col-12 col-lg-6">
+        <h4>Most Recent List</h4><br>
+
+        <CSVHandler CSV=@RecentCSV Whitelist=@View1 Title="recent-members" OnCSVChanged="RecentCSVChanged"/>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <h4>Older List</h4><br>
+
+        <CSVHandler CSV=@OldCSV Whitelist=@View1 Title="old-members" OnCSVChanged="OldCSVChanged"/>
+    </div>
+</div>
+
+@code
+{
+    List<IDictionary<string, object>> RecentCSV = null!;
+    List<IDictionary<string, object>> OldCSV = null!;
+    
+    //Missing in new list
+    List<IDictionary<string, object>> LostCSV = null!;
+
+    //Found in new list
+    List<IDictionary<string, object>> NewCSV = null!;
+
+    //Membership status changed on old list from Member in Good Standing to anything else
+    List<IDictionary<string, object>> ExpiredCSV = null!;
+
+    bool ReportCalculated = false;
+
+    List<string> View1 = new List<string>()
+    {
+        "first_name",
+        "last_name",
+        "email",
+        "membership_status"
+    };
+
+    List<string> View2 = new List<string>()
+    {
+        "first_name",
+        "last_name",
+        "email"
+    };
+
+    void RecentCSVChanged(List<IDictionary<string, object>> Data)
+    {
+        RecentCSV = Data;
+        CalculateReport();
+    }
+
+    void OldCSVChanged(List<IDictionary<string, object>> Data)
+    {
+        OldCSV = Data;
+        CalculateReport();
+    }
+
+    void CalculateReport()
+    {
+        if (RecentCSV == null || OldCSV == null)
+            return;
+
+        HashSet<string> recentEmails = new HashSet<string>(RecentCSV
+            .Where(row => row.ContainsKey("email") && row["email"] != null)
+            .Select(row => row["email"]!.ToString()!.ToLowerInvariant())
+        );
+
+        HashSet<string> oldEmails = new HashSet<string>(OldCSV
+            .Where(row => row.ContainsKey("email") && row["email"] != null)
+            .Select(row => row["email"]!.ToString()!.ToLowerInvariant())
+        );
+
+        var oldStatusLookup = OldCSV
+        .Where(row => row.ContainsKey("email") && row["email"] != null)
+        .ToDictionary(
+            row => row["email"]!.ToString()!.ToLowerInvariant(),
+            row => row.ContainsKey("membership_status") ? row["membership_status"]?.ToString() ?? "" : ""
+        );
+
+        LostCSV = OldCSV.Where(row =>
+            row.ContainsKey("email") &&
+            row["email"] != null && !recentEmails.Contains(row["email"]!.ToString()!.ToLowerInvariant())
+        ).ToList();
+
+        NewCSV = RecentCSV.Where(row =>
+            row.ContainsKey("email") &&
+            row["email"] != null && !oldEmails.Contains(row["email"]!.ToString()!.ToLowerInvariant())
+        ).ToList();
+
+        ExpiredCSV = RecentCSV
+        .Where(row =>
+            row.ContainsKey("email") &&
+            row["email"] != null &&
+            oldStatusLookup.TryGetValue(row["email"]!.ToString()!.ToLowerInvariant(), out var oldStatus) &&
+            oldStatus.Trim() == "Member in Good Standing" &&
+            row.ContainsKey("membership_status") &&
+            row["membership_status"]?.ToString()?.Trim() != "Member in Good Standing"
+        )
+        .ToList();
+
+        ReportCalculated = true;
+    }
+}
